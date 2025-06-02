@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Upload, Camera, Info, AlertTriangle, CheckCircle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -127,17 +128,20 @@ const Index = () => {
         const data = imageData?.data;
         
         if (!data) {
-          resolve('healthy');
+          resolve('not_plant');
           return;
         }
         
-        // Analyze color patterns and features
+        // Enhanced analysis for plant detection
         let totalPixels = data.length / 4;
         let greenPixels = 0;
         let brownPixels = 0;
         let yellowPixels = 0;
         let darkSpots = 0;
         let brightness = 0;
+        let leafGreenPixels = 0; // More specific green detection for leaves
+        let veryDarkPixels = 0;
+        let grayPixels = 0;
         
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
@@ -146,7 +150,12 @@ const Index = () => {
           
           brightness += (r + g + b) / 3;
           
-          // Detect green (healthy vegetation)
+          // Detect leaf-like green (chlorophyll range)
+          if (g > r && g > b && g > 80 && g < 200 && r < 150 && b < 150) {
+            leafGreenPixels++;
+          }
+          
+          // General green detection
           if (g > r && g > b && g > 100) {
             greenPixels++;
           }
@@ -165,47 +174,83 @@ const Index = () => {
           if (r < 50 && g < 50 && b < 50) {
             darkSpots++;
           }
+          
+          // Detect very dark pixels (non-plant objects like pens)
+          if (r < 30 && g < 30 && b < 30) {
+            veryDarkPixels++;
+          }
+          
+          // Detect gray/metallic colors (non-plant objects)
+          const avgColor = (r + g + b) / 3;
+          if (Math.abs(r - avgColor) < 20 && Math.abs(g - avgColor) < 20 && Math.abs(b - avgColor) < 20 && avgColor > 50 && avgColor < 180) {
+            grayPixels++;
+          }
         }
         
         const avgBrightness = brightness / totalPixels;
         const greenRatio = greenPixels / totalPixels;
+        const leafGreenRatio = leafGreenPixels / totalPixels;
         const brownRatio = brownPixels / totalPixels;
         const yellowRatio = yellowPixels / totalPixels;
         const darkSpotRatio = darkSpots / totalPixels;
+        const veryDarkRatio = veryDarkPixels / totalPixels;
+        const grayRatio = grayPixels / totalPixels;
         
-        console.log('Image analysis:', {
+        console.log('Enhanced image analysis:', {
           greenRatio,
+          leafGreenRatio,
           brownRatio,
           yellowRatio,
           darkSpotRatio,
+          veryDarkRatio,
+          grayRatio,
           avgBrightness
         });
         
-        // Decision logic based on image analysis
-        if (greenRatio > 0.4 && brownRatio < 0.05 && yellowRatio < 0.1 && darkSpotRatio < 0.02) {
+        // First check if this is actually a plant leaf
+        const isLikelyPlant = (
+          leafGreenRatio > 0.05 || // Has some leaf-like green
+          (greenRatio > 0.15 && veryDarkRatio < 0.3) || // General green with not too much black
+          (yellowRatio > 0.05 && greenRatio > 0.05) // Some yellow-green combination
+        );
+        
+        const isLikelyNonPlant = (
+          veryDarkRatio > 0.4 || // Too much black (like a pen)
+          grayRatio > 0.5 || // Too much gray/metallic
+          (avgBrightness < 60 && leafGreenRatio < 0.02) || // Very dark with no green
+          (avgBrightness > 200 && leafGreenRatio < 0.01) // Very bright with no green
+        );
+        
+        if (isLikelyNonPlant || !isLikelyPlant) {
+          resolve('not_plant');
+          return;
+        }
+        
+        // Enhanced decision logic for plant diseases
+        if (leafGreenRatio > 0.3 && brownRatio < 0.05 && yellowRatio < 0.1 && darkSpotRatio < 0.02) {
           resolve('healthy');
         } else if (brownRatio > 0.1 && darkSpotRatio > 0.05) {
           resolve('early_blight');
         } else if (yellowRatio > 0.2) {
           resolve('yellow_leaf_curl');
-        } else if (darkSpotRatio > 0.08) {
+        } else if (darkSpotRatio > 0.08 && leafGreenRatio > 0.05) {
           resolve('bacterial_spot');
-        } else if (brownRatio > 0.05 && avgBrightness < 100) {
+        } else if (brownRatio > 0.05 && avgBrightness < 100 && leafGreenRatio > 0.02) {
           resolve('late_blight');
-        } else if (yellowRatio > 0.1 && greenRatio < 0.3) {
+        } else if (yellowRatio > 0.1 && greenRatio < 0.3 && leafGreenRatio > 0.02) {
           resolve('septoria_leaf_spot');
-        } else if (avgBrightness > 150 && yellowRatio > 0.05) {
+        } else if (avgBrightness > 150 && yellowRatio > 0.05 && leafGreenRatio > 0.02) {
           resolve('spider_mites');
+        } else if (leafGreenRatio > 0.02) {
+          // If it's a plant but doesn't match specific diseases, default to healthy or mild disease
+          resolve(Math.random() > 0.5 ? 'healthy' : 'leaf_mold');
         } else {
-          // Random selection from disease types for edge cases
-          const diseaseKeys = Object.keys(diseaseDatabase);
-          const randomDisease = diseaseKeys[Math.floor(Math.random() * diseaseKeys.length)];
-          resolve(randomDisease);
+          resolve('not_plant');
         }
       };
       
       img.onerror = () => {
-        resolve('healthy');
+        resolve('not_plant');
       };
       
       img.src = imageUrl;
@@ -219,7 +264,29 @@ const Index = () => {
     
     try {
       // Analyze the uploaded image
-      const detectedDisease = await analyzeImageFeatures(imageUrl) as keyof typeof diseaseDatabase;
+      const detectedDisease = await analyzeImageFeatures(imageUrl) as keyof typeof diseaseDatabase | 'not_plant';
+      
+      if (detectedDisease === 'not_plant') {
+        setTimeout(() => {
+          setPrediction({
+            disease: "Not a Plant Leaf",
+            confidence: 0.95,
+            healthy: false,
+            cause: "The uploaded image does not appear to be a plant leaf",
+            symptoms: "No plant material detected in the image",
+            treatment: "Please upload a clear image of a plant leaf for disease analysis",
+            prevention: "Ensure the image shows a plant leaf with good lighting and focus"
+          });
+          setIsAnalyzing(false);
+          
+          toast({
+            title: "Invalid Image",
+            description: "Please upload an image of a plant leaf for analysis.",
+            variant: "destructive"
+          });
+        }, 1500);
+        return;
+      }
       
       // Get the prediction from our disease database
       const result = diseaseDatabase[detectedDisease];
