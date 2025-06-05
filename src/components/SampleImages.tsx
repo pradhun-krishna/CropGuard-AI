@@ -6,22 +6,24 @@ interface SampleImagesProps {
 }
 
 const SampleImages: React.FC<SampleImagesProps> = ({ onSampleSelect }) => {
+  const baseUrl = import.meta.env.PROD ? "/crop-whisperer-disease-aid" : "";
+
   const sampleImages = [
     {
       id: 1,
-      url: "/sample-images/healthy-tomato-leaf.jpg",
+      url: `${baseUrl}/sample-images/healthy-tomato-leaf.jpg`,
       title: "Healthy Tomato Leaf",
       description: "Example of a healthy tomato plant leaf",
     },
     {
       id: 2,
-      url: "/sample-images/diseased-tomato-leaf.jpg",
+      url: `${baseUrl}/sample-images/diseased-tomato-leaf.jpg`,
       title: "Diseased Tomato Leaf",
       description: "Example showing early blight disease symptoms",
     },
     {
       id: 3,
-      url: "/sample-images/healthy-potato-leaf.jpg",
+      url: `${baseUrl}/sample-images/healthy-potato-leaf.jpg`,
       title: "Healthy Potato Leaf",
       description: "Example of a healthy potato plant leaf",
     },
