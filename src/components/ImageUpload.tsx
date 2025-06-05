@@ -1,7 +1,6 @@
-
-import React, { useRef, useState } from 'react';
-import { Upload, Camera, X, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useRef, useState } from "react";
+import { Upload, Camera, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void;
@@ -9,12 +8,19 @@ interface ImageUploadProps {
   isAnalyzing: boolean;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage, isAnalyzing }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({
+  onImageUpload,
+  uploadedImage,
+  isAnalyzing,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const handleFileSelect = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
@@ -22,15 +28,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
         }
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
     }
   };
 
@@ -45,14 +42,23 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileSelect(files[0]);
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          onImageUpload(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const clearImage = () => {
-    onImageUpload('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    onImageUpload("");
   };
 
   return (
@@ -60,9 +66,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
       {!uploadedImage ? (
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragOver 
-              ? 'border-green-500 bg-green-50' 
-              : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+            dragOver
+              ? "border-green-500 bg-green-50"
+              : "border-gray-300 hover:border-green-400 hover:bg-green-50"
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -79,7 +85,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
               <p className="text-gray-600 mb-4">
                 Drag and drop an image here, or click to select
               </p>
-              <Button 
+              <Button
                 onClick={() => fileInputRef.current?.click()}
                 className="bg-green-600 hover:bg-green-700"
               >
@@ -88,7 +94,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
               </Button>
             </div>
           </div>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -110,12 +116,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
                 <div className="text-white text-center">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                   <p className="text-sm">Analyzing image...</p>
-                  <p className="text-xs opacity-75">This may take a few seconds</p>
+                  <p className="text-xs opacity-75">
+                    This may take a few seconds
+                  </p>
                 </div>
               </div>
             )}
           </div>
-          
+
           <Button
             onClick={clearImage}
             variant="outline"
@@ -126,7 +134,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, uploadedImage,
           </Button>
         </div>
       )}
-      
+
       <div className="text-xs text-gray-500 text-center">
         Supported formats: JPG, PNG, WebP • Max size: 10MB
       </div>
