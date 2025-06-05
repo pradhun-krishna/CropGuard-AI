@@ -27,7 +27,10 @@ export default defineConfig({
           return `assets/[name]-[hash].js`;
         },
         assetFileNames: (assetInfo) => {
-          return `assets/[name]-[hash].[ext]`;
+          if (assetInfo.name?.endsWith('.jpg') || assetInfo.name?.endsWith('.png')) {
+            return `sample-images/[name][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
         },
       },
     },

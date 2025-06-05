@@ -6,7 +6,7 @@ interface SampleImagesProps {
 }
 
 const SampleImages: React.FC<SampleImagesProps> = ({ onSampleSelect }) => {
-  const baseUrl = import.meta.env.PROD ? "/crop-whisperer-disease-aid" : "";
+  const baseUrl = import.meta.env.PROD ? "/CropGuard-AI" : "";
 
   const sampleImages = [
     {
