@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BASE_URL: /crop-whisperer-disease-aid/
+          VITE_BASE_URL: /CropGuard-AI/
           NODE_ENV: production
 
       - name: Deploy
