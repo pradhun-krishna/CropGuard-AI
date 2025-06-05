@@ -27,6 +27,9 @@ export default defineConfig({
           return `assets/[name]-[hash].js`;
         },
         assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'favicon.ico') {
+            return '[name][extname]';
+          }
           if (assetInfo.name?.endsWith('.jpg') || assetInfo.name?.endsWith('.png')) {
             return `sample-images/[name][extname]`;
           }
