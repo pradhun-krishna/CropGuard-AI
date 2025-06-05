@@ -28,6 +28,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_URL: /crop-whisperer-disease-aid/
+          NODE_ENV: production
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
@@ -35,3 +36,4 @@ jobs:
           folder: dist
           branch: gh-pages
           clean: true
+          single-commit: true
